@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Billetera</title>
+<style>
+/* ── RESET ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+/* ── VARIABLES ── */
+:root {
+  --bg:       #0d0f14;
+  --surface:  #151820;
+  --surface2: #1c2030;
+  --border:   #252a3a;
+  --border2:  #2e3550;
+  --text:     #e8ecf4;
+  --text2:    #7a869e;
+  --text3:    #3d4560;
+  --green:    #00e09a;
+  --green-d:  rgba(0,224,154,0.1);
+  --red:      #ff4f6d;
+  --red-d:    rgba(255,79,109,0.1);
+  --gold:     #f5a623;
+  --gold-d:   rgba(245,166,35,0.12);
+  --blue:     #3d8bff;
+  --blue-d:   rgba(61,139,255,0.12);
+  --font:     'SF Pro Display', -apple-system, 'Helvetica Neue', sans-serif;
+  --mono:     ui-monospace, 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+  --r:        12px;
+  --r-sm:     8px;
+}
+
+/* ── BASE ── */
+html { height: 100%; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  min-height: 100dvh;
+  padding-bottom: 80px;
+  overscroll-behavior: none;
+}
+
+/* ── HEADER ── */
+.header {
+  position: sticky; top: 0; z-index: 50;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 16px 10px;
+}
+.header-top {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 12px;
+}
+.app-title {
+  font-size: 13px; font-weight: 600; color: var(--text2);
+  letter-spacing: 0.08em; text-transform: uppercase;
+}
+.mes-nav {
+  display: flex; align-items: center; gap: 8px;
+}
+.mes-btn {
+  background: var(--surface); border: 1px solid var(--border2);
+  border-radius: var(--r-sm); color: var(--text2);
+  width: 30px; height: 30px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; cursor: pointer;
+}
+.mes-btn:active { opacity: .6; }
+.mes-label {
+  font-size: 13px; font-weight: 600; color: var(--text);
+  min-width: 110px; text-align: center;
+}
+
+/* ── HERO SÁBADO ── */
+.hero {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--r);
+  padding: 16px;
+  margin: 12px 12px 0;
+  position: relative;
+  overflow: hidden;
+}
+.hero::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at top right, rgba(0,224,154,0.06) 0%, transparent 60%);
+  pointer-events: none;
+}
+.hero.danger::before {
+  background: radial-gradient(ellipse at top right, rgba(255,79,109,0.08) 0%, transparent 60%);
+}
+.hero-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--text3); margin-bottom: 6px;
+}
+.hero-num {
+  font-size: 42px; font-weight: 700; font-family: var(--mono);
+  letter-spacing: -0.02em; line-height: 1;
+  color: var(--green); transition: color .3s;
+}
+.hero-num.neg { color: var(--red); }
+.hero-sub {
+  font-size: 11px; color: var(--text2); margin-top: 8px; line-height: 1.5;
+}
+
+/* ── MINI STATS ── */
+.stats-row {
+  display: grid; grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px; margin: 8px 12px 0;
+}
+.stat {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+}
+.stat-lbl { font-size: 9px; color: var(--text3); font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 3px; }
+.stat-val { font-size: 13px; font-weight: 700; font-family: var(--mono); }
+.stat-val.g { color: var(--green); }
+.stat-val.r { color: var(--red); }
+.stat-val.b { color: var(--blue); }
+
+/* ── QUINCENA TABS ── */
+.q-tabs {
+  display: flex; gap: 6px;
+  margin: 10px 12px 0;
+}
+.q-tab {
+  flex: 1; padding: 8px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-sm); cursor: pointer;
+  text-align: center; transition: all .15s;
+}
+.q-tab.active {
+  background: var(--blue-d); border-color: var(--blue);
+}
+.q-tab-label { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--text2); }
+.q-tab.active .q-tab-label { color: var(--blue); }
+.q-tab-total { font-size: 13px; font-weight: 700; font-family: var(--mono); color: var(--red); margin-top: 2px; }
+
+/* ── LISTA DE MOVIMIENTOS ── */
+.lista-section {
+  margin: 10px 12px 0;
+}
+.section-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 6px;
+}
+.section-title {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--text3);
+}
+.add-btn {
+  background: var(--blue-d); border: 1px solid var(--blue);
+  border-radius: 20px; padding: 4px 12px;
+  font-size: 11px; font-weight: 700; color: var(--blue);
+  cursor: pointer; display: flex; align-items: center; gap: 4px;
+}
+.add-btn.green { background: var(--green-d); border-color: var(--green); color: var(--green); }
+.add-btn:active { opacity: .7; }
+
+.movimiento {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-sm); padding: 10px 12px;
+  margin-bottom: 5px; transition: opacity .2s;
+}
+.movimiento.pagado { opacity: .35; }
+.movimiento.ingreso { border-color: rgba(0,224,154,0.2); background: var(--green-d); }
+
+.chk {
+  width: 18px; height: 18px; flex-shrink: 0;
+  border: 1.5px solid var(--border2);
+  border-radius: 4px; background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; cursor: pointer; color: var(--green);
+}
+.movimiento.pagado .chk { background: var(--green-d); border-color: var(--green); }
+
+.mov-info { flex: 1; min-width: 0; }
+.mov-nombre { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mov-cat { font-size: 10px; color: var(--text3); margin-top: 1px; }
+
+.mov-monto { font-size: 14px; font-weight: 700; font-family: var(--mono); white-space: nowrap; }
+.mov-monto.g { color: var(--red); }
+.mov-monto.i { color: var(--green); }
+
+.del-btn { background: none; border: none; color: var(--text3); font-size: 16px; cursor: pointer; padding: 0 2px; flex-shrink: 0; }
+.del-btn:active { color: var(--red); }
+
+.empty-state {
+  text-align: center; padding: 20px; color: var(--text3);
+  font-size: 12px; font-style: italic;
+}
+
+/* ── FORM INLINE ── */
+.form-card {
+  background: var(--surface2); border: 1px solid var(--border2);
+  border-radius: var(--r); padding: 12px; margin-bottom: 8px;
+}
+.form-title { font-size: 11px; font-weight: 700; color: var(--blue); margin-bottom: 10px; letter-spacing: 0.06em; text-transform: uppercase; }
+.form-title.grn { color: var(--green); }
+.fila { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 6px; }
+.fila.full { grid-template-columns: 1fr; }
+
+input, select, textarea {
+  width: 100%; background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  padding: 8px 10px; color: var(--text);
+  font-family: var(--font); font-size: 13px;
+  outline: none; transition: border-color .15s;
+  -webkit-appearance: none;
+}
+input:focus, select:focus { border-color: var(--blue); }
+input::placeholder { color: var(--text3); }
+select { cursor: pointer; }
+select option { background: var(--surface2); }
+
+.form-btns { display: flex; gap: 6px; margin-top: 8px; }
+.btn { flex: 1; padding: 9px; border-radius: var(--r-sm); font-size: 13px; font-weight: 700; cursor: pointer; border: 1px solid; font-family: var(--font); }
+.btn-cancel { background: var(--surface); border-color: var(--border2); color: var(--text2); }
+.btn-primary { background: var(--blue); border-color: var(--blue); color: white; }
+.btn-green { background: var(--green); border-color: var(--green); color: #0d0f14; }
+.btn:active { opacity: .75; }
+
+/* ── BARRA INFERIOR ── */
+.bottom-bar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--surface); border-top: 1px solid var(--border2);
+  padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+  display: flex; gap: 6px; z-index: 50;
+}
+.bar-btn {
+  flex: 1; padding: 10px 6px;
+  background: var(--bg); border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  font-size: 11px; font-weight: 600; color: var(--text2);
+  cursor: pointer; text-align: center; transition: all .15s;
+}
+.bar-btn.active { background: var(--blue-d); border-color: var(--blue); color: var(--blue); }
+.bar-btn:active { opacity: .7; }
+
+/* ── OVERLAY / MODAL ── */
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.7);
+  z-index: 200; display: none; align-items: flex-end;
+  padding: 0;
+}
+.overlay.active { display: flex; }
+.modal {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--r) var(--r) 0 0;
+  width: 100%; max-height: 85dvh; overflow-y: auto;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.modal-handle {
+  width: 36px; height: 4px; background: var(--border2);
+  border-radius: 2px; margin: 10px auto 14px;
+}
+.modal-title { font-size: 15px; font-weight: 700; padding: 0 16px 14px; color: var(--text); }
+.modal-body { padding: 0 16px 20px; }
+
+/* ── RESUMEN ── */
+.res-fila {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.res-fila:last-child { border-bottom: none; }
+.res-val { font-weight: 700; font-family: var(--mono); }
+
+/* ── BACKUP ── */
+.backup-area {
+  background: var(--bg); border: 1px solid var(--border2);
+  border-radius: var(--r-sm); padding: 10px; font-family: var(--mono);
+  font-size: 11px; color: var(--text2); min-height: 80px; resize: none;
+  width: 100%;
+}
+.msg-ok { background: var(--green-d); border: 1px solid var(--green); color: var(--green); border-radius: var(--r-sm); padding: 8px 12px; font-size: 12px; text-align: center; margin-top: 8px; }
+.msg-err { background: var(--red-d); border: 1px solid var(--red); color: var(--red); border-radius: var(--r-sm); padding: 8px 12px; font-size: 12px; text-align: center; margin-top: 8px; }
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* ── ANIMACIONES ── */
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.movimiento { animation: slideUp .15s ease; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-top">
+    <span class="app-title">💰 Billetera</span>
+    <div class="mes-nav">
+      <button class="mes-btn" onclick="cambiarMes(-1)">‹</button>
+      <span class="mes-label" id="mesLabel"></span>
+      <button class="mes-btn" onclick="cambiarMes(1)">›</button>
+    </div>
+  </div>
+</div>
+
+<!-- HERO: ¿TE ALCANZA EL SÁBADO? -->
+<div class="hero" id="heroCard">
+  <div class="hero-label">⚡ ¿Te alcanza el sábado?</div>
+  <div class="hero-num" id="heroNum">$ 0</div>
+  <div class="hero-sub" id="heroSub">Agrega ingresos y gastos para ver tu situación.</div>
+</div>
+
+<!-- MINI STATS -->
+<div class="stats-row">
+  <div class="stat">
+    <div class="stat-lbl">Ingresado</div>
+    <div class="stat-val g" id="statIng">$ 0</div>
+  </div>
+  <div class="stat">
+    <div class="stat-lbl">Pagado</div>
+    <div class="stat-val r" id="statPag">$ 0</div>
+  </div>
+  <div class="stat">
+    <div class="stat-lbl">Por pagar</div>
+    <div class="stat-val b" id="statPend">$ 0</div>
+  </div>
+</div>
+
+<!-- QUINCENA TABS -->
+<div class="q-tabs">
+  <div class="q-tab active" id="tab-q1" onclick="setQ(1)">
+    <div class="q-tab-label">1–15</div>
+    <div class="q-tab-total" id="totQ1">$ 0</div>
+  </div>
+  <div class="q-tab" id="tab-q2" onclick="setQ(2)">
+    <div class="q-tab-label">16–fin</div>
+    <div class="q-tab-total" id="totQ2">$ 0</div>
+  </div>
+</div>
+
+<!-- LISTA GASTOS -->
+<div class="lista-section" id="listaGastos">
+  <div class="section-header">
+    <span class="section-title">💸 Gastos</span>
+    <button class="add-btn" onclick="abrirForm('gasto')">+ Gasto</button>
+  </div>
+  <div id="formGasto" style="display:none">
+    <div class="form-card">
+      <div class="form-title">Nuevo gasto</div>
+      <div class="fila full" style="margin-bottom:6px">
+        <input id="fg-nombre" type="text" placeholder="Ej: Supermercado, luz, micro..." autocomplete="off">
+      </div>
+      <div class="fila">
+        <input id="fg-monto" type="text" inputmode="numeric" placeholder="$ Monto" oninput="fmtInput(this)">
+        <select id="fg-cat"></select>
+      </div>
+      <div class="form-btns">
+        <button class="btn btn-cancel" onclick="cerrarForm('gasto')">Cancelar</button>
+        <button class="btn btn-primary" onclick="agregarGasto()">Agregar</button>
+      </div>
+    </div>
+  </div>
+  <div id="gastosList"></div>
+</div>
+
+<!-- LISTA INGRESOS -->
+<div class="lista-section" id="listaIngresos" style="margin-top:14px">
+  <div class="section-header">
+    <span class="section-title">💚 Ingresos</span>
+    <button class="add-btn green" onclick="abrirForm('ingreso')">+ Ingreso</button>
+  </div>
+  <div id="formIngreso" style="display:none">
+    <div class="form-card">
+      <div class="form-title grn">Nuevo ingreso</div>
+      <div class="fila full" style="margin-bottom:6px">
+        <input id="fi-nombre" type="text" placeholder="Ej: Quincena Frutexsa, Tatuaje..." autocomplete="off">
+      </div>
+      <div class="fila">
+        <input id="fi-monto" type="text" inputmode="numeric" placeholder="$ Monto" oninput="fmtInput(this)">
+        <select id="fi-cat"></select>
+      </div>
+      <div class="form-btns">
+        <button class="btn btn-cancel" onclick="cerrarForm('ingreso')">Cancelar</button>
+        <button class="btn btn-green" onclick="agregarIngreso()">Agregar</button>
+      </div>
+    </div>
+  </div>
+  <div id="ingresosList"></div>
+</div>
+
+<!-- BARRA INFERIOR -->
+<div class="bottom-bar">
+  <button class="bar-btn active" id="btnVista" onclick="setVista('movimientos')">📋 Movimientos</button>
+  <button class="bar-btn" id="btnResumen" onclick="setVista('resumen')">📊 Resumen</button>
+  <button class="bar-btn" id="btnBackup" onclick="abrirModal('backup')">💾 Backup</button>
+</div>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="cerrarModalOverlay(event)">
+
+  <!-- MODAL RESUMEN -->
+  <div class="modal" id="modal-resumen" style="display:none">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📊 Resumen del mes</div>
+    <div class="modal-body" id="resumenBody"></div>
+  </div>
+
+  <!-- MODAL BACKUP -->
+  <div class="modal" id="modal-backup" style="display:none">
+    <div class="modal-handle"></div>
+    <div class="modal-title">💾 Backup de datos</div>
+    <div class="modal-body">
+      <p style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6">
+        Tus datos viven en este navegador. Si limpias el caché los pierdes — guarda un backup seguido.
+      </p>
+      <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">📤 Exportar</div>
+      <button class="btn btn-primary" style="width:100%;margin-bottom:6px" onclick="exportarJSON()">Descargar backup JSON</button>
+      <button class="btn btn-cancel" style="width:100%;margin-bottom:16px" onclick="copiarJSON()">Copiar al portapapeles</button>
+
+      <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">📥 Importar</div>
+      <textarea id="importTxt" class="backup-area" placeholder="Pega aquí el JSON de backup..."></textarea>
+      <button class="btn btn-green" style="width:100%;margin-top:6px" onclick="importarJSON()">Restaurar desde JSON</button>
+      <div id="backupMsg" style="display:none"></div>
+
+      <div style="font-size:10px;color:var(--text3);text-align:center;margin-top:16px;line-height:1.6">
+        💡 Mandáte el archivo JSON por WhatsApp a vos mismo después de cada sábado
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// CONSTANTES
+// ═══════════════════════════════════════════
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+               'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+const CATS_GASTO   = ['Fijo','Deuda','Servicio','Hogar','Transporte','Salud','Alimentación','Tatuaje','Otro'];
+const CATS_INGRESO = ['Frutexsa','Tatuaje','Extra','Otro'];
+
+// ═══════════════════════════════════════════
+// ESTADO
+// ═══════════════════════════════════════════
+let db = {};
+let mesActivo = '';   // 'YYYY-MM'
+let qActiva = 1;      // 1 o 2
+
+// ═══════════════════════════════════════════
+// PERSISTENCIA
+// ═══════════════════════════════════════════
+function cargar() {
+  try { const s = localStorage.getItem('bll2'); if (s) db = JSON.parse(s); } catch(e) { db = {}; }
+}
+function guardar() {
+  localStorage.setItem('bll2', JSON.stringify(db));
+}
+function getMes(m) {
+  if (!db[m]) db[m] = { gastos: [], ingresos: [] };
+  return db[m];
+}
+
+// ═══════════════════════════════════════════
+// FORMATO
+// ═══════════════════════════════════════════
+function fmt(n) {
+  return '$ ' + Math.round(n || 0).toLocaleString('es-CL');
+}
+function parseMonto(str) {
+  return parseFloat((str || '').replace(/[^0-9]/g, '')) || 0;
+}
+function fmtInput(el) {
+  const raw = el.value.replace(/[^0-9]/g, '');
+  el.value = raw ? '$ ' + parseInt(raw).toLocaleString('es-CL') : '';
+}
+
+// ═══════════════════════════════════════════
+// MES
+// ═══════════════════════════════════════════
+function initMes() {
+  const now = new Date();
+  mesActivo = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
+}
+
+function cambiarMes(dir) {
+  const [y, m] = mesActivo.split('-').map(Number);
+  const d = new Date(y, m - 1 + dir, 1);
+  mesActivo = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0');
+  render();
+}
+
+function renderMesLabel() {
+  const [y, m] = mesActivo.split('-').map(Number);
+  document.getElementById('mesLabel').textContent = MESES[m - 1] + ' ' + y;
+}
+
+// ═══════════════════════════════════════════
+// QUINCENA
+// ═══════════════════════════════════════════
+function setQ(q) {
+  qActiva = q;
+  document.getElementById('tab-q1').classList.toggle('active', q === 1);
+  document.getElementById('tab-q2').classList.toggle('active', q === 2);
+  cerrarForm('gasto');
+  cerrarForm('ingreso');
+  renderListas();
+}
+
+// ═══════════════════════════════════════════
+// FORMS
+// ═══════════════════════════════════════════
+function poblarSelects() {
+  const fg = document.getElementById('fg-cat');
+  const fi = document.getElementById('fi-cat');
+  fg.innerHTML = CATS_GASTO.map(c => `<option>${c}</option>`).join('');
+  fi.innerHTML = CATS_INGRESO.map(c => `<option>${c}</option>`).join('');
+}
+
+function abrirForm(tipo) {
+  document.getElementById('formGasto').style.display   = tipo === 'gasto'   ? 'block' : 'none';
+  document.getElementById('formIngreso').style.display = tipo === 'ingreso' ? 'block' : 'none';
+  setTimeout(() => {
+    document.getElementById(tipo === 'gasto' ? 'fg-nombre' : 'fi-nombre').focus();
+  }, 80);
+}
+function cerrarForm(tipo) {
+  document.getElementById(tipo === 'gasto' ? 'formGasto' : 'formIngreso').style.display = 'none';
+  if (tipo === 'gasto') { document.getElementById('fg-nombre').value = ''; document.getElementById('fg-monto').value = ''; }
+  else { document.getElementById('fi-nombre').value = ''; document.getElementById('fi-monto').value = ''; }
+}
+
+// ═══════════════════════════════════════════
+// GASTOS
+// ═══════════════════════════════════════════
+function agregarGasto() {
+  const nombre = document.getElementById('fg-nombre').value.trim();
+  const monto  = parseMonto(document.getElementById('fg-monto').value);
+  const cat    = document.getElementById('fg-cat').value;
+  if (!nombre || !monto) return;
+  getMes(mesActivo).gastos.push({ id: 'g' + Date.now(), q: qActiva, nombre, cat, monto, pagado: false });
+  guardar(); cerrarForm('gasto'); render();
+}
+
+function togglePagado(id) {
+  const g = getMes(mesActivo).gastos.find(g => g.id === id);
+  if (g) { g.pagado = !g.pagado; guardar(); render(); }
+}
+
+function eliminarGasto(id) {
+  getMes(mesActivo).gastos = getMes(mesActivo).gastos.filter(g => g.id !== id);
+  guardar(); render();
+}
+
+// ═══════════════════════════════════════════
+// INGRESOS
+// ═══════════════════════════════════════════
+function agregarIngreso() {
+  const nombre = document.getElementById('fi-nombre').value.trim();
+  const monto  = parseMonto(document.getElementById('fi-monto').value);
+  const cat    = document.getElementById('fi-cat').value;
+  if (!nombre || !monto) return;
+  getMes(mesActivo).ingresos.push({ id: 'i' + Date.now(), q: qActiva, nombre, cat, monto });
+  guardar(); cerrarForm('ingreso'); render();
+}
+
+function eliminarIngreso(id) {
+  getMes(mesActivo).ingresos = getMes(mesActivo).ingresos.filter(i => i.id !== id);
+  guardar(); render();
+}
+
+// ═══════════════════════════════════════════
+// RENDER HERO
+// ═══════════════════════════════════════════
+function renderHero() {
+  const mes = getMes(mesActivo);
+  const totIng  = mes.ingresos.reduce((a, i) => a + i.monto, 0);
+  const pagado  = mes.gastos.filter(g => g.pagado).reduce((a, g) => a + g.monto, 0);
+  const pend    = mes.gastos.filter(g => !g.pagado).reduce((a, g) => a + g.monto, 0);
+  const saldo   = totIng - pagado;
+  const postSab = saldo - pend;
+
+  document.getElementById('statIng').textContent  = fmt(totIng);
+  document.getElementById('statPag').textContent  = fmt(pagado);
+  document.getElementById('statPend').textContent = fmt(pend);
+
+  const heroNum  = document.getElementById('heroNum');
+  const heroSub  = document.getElementById('heroSub');
+  const heroCard = document.getElementById('heroCard');
+
+  heroNum.textContent = fmt(postSab);
+  heroNum.className   = 'hero-num' + (postSab < 0 ? ' neg' : '');
+  heroCard.className  = 'hero' + (postSab < 0 ? ' danger' : '');
+
+  if (totIng === 0 && mes.gastos.length === 0) {
+    heroSub.textContent = 'Agrega ingresos y gastos para ver tu situación.';
+  } else if (postSab >= 0) {
+    heroSub.textContent = `✅ Te alcanza — sobran ${fmt(postSab)} después de pagar todo`;
+  } else {
+    heroSub.textContent = `⚠️ Te faltan ${fmt(Math.abs(postSab))} — revisá si falta registrar algún ingreso`;
+  }
+
+  // Totales quincenas
+  const tQ1g = mes.gastos.filter(g => g.q === 1).reduce((a, g) => a + g.monto, 0);
+  const tQ2g = mes.gastos.filter(g => g.q === 2).reduce((a, g) => a + g.monto, 0);
+  document.getElementById('totQ1').textContent = fmt(tQ1g);
+  document.getElementById('totQ2').textContent = fmt(tQ2g);
+}
+
+// ═══════════════════════════════════════════
+// RENDER LISTAS
+// ═══════════════════════════════════════════
+function renderListas() {
+  const mes = getMes(mesActivo);
+
+  // Gastos de la quincena activa
+  const gastos = mes.gastos.filter(g => g.q === qActiva);
+  const gl = document.getElementById('gastosList');
+  if (!gastos.length) {
+    gl.innerHTML = '<div class="empty-state">Sin gastos en esta quincena</div>';
+  } else {
+    gl.innerHTML = gastos.map(g => `
+      <div class="movimiento ${g.pagado ? 'pagado' : ''}">
+        <div class="chk" onclick="togglePagado('${g.id}')">${g.pagado ? '✓' : ''}</div>
+        <div class="mov-info">
+          <div class="mov-nombre">${g.nombre}</div>
+          <div class="mov-cat">${g.cat}</div>
+        </div>
+        <span class="mov-monto g">${fmt(g.monto)}</span>
+        <button class="del-btn" onclick="eliminarGasto('${g.id}')">×</button>
+      </div>`).join('');
+  }
+
+  // Ingresos de la quincena activa
+  const ingresos = mes.ingresos.filter(i => i.q === qActiva);
+  const il = document.getElementById('ingresosList');
+  if (!ingresos.length) {
+    il.innerHTML = '<div class="empty-state">Sin ingresos en esta quincena</div>';
+  } else {
+    il.innerHTML = ingresos.map(i => `
+      <div class="movimiento ingreso">
+        <div class="mov-info">
+          <div class="mov-nombre">${i.nombre}</div>
+          <div class="mov-cat">${i.cat}</div>
+        </div>
+        <span class="mov-monto i">${fmt(i.monto)}</span>
+        <button class="del-btn" onclick="eliminarIngreso('${i.id}')">×</button>
+      </div>`).join('');
+  }
+}
+
+// ═══════════════════════════════════════════
+// RENDER RESUMEN
+// ═══════════════════════════════════════════
+function renderResumen() {
+  const mes = getMes(mesActivo);
+  const [y, m] = mesActivo.split('-').map(Number);
+
+  const totIng = mes.ingresos.reduce((a, i) => a + i.monto, 0);
+  const totGas = mes.gastos.reduce((a, g) => a + g.monto, 0);
+  const pagado = mes.gastos.filter(g => g.pagado).reduce((a, g) => a + g.monto, 0);
+  const pend   = mes.gastos.filter(g => !g.pagado).reduce((a, g) => a + g.monto, 0);
+
+  // Por categoría gastos
+  const cats = {};
+  mes.gastos.forEach(g => { cats[g.cat] = (cats[g.cat] || 0) + g.monto; });
+  const catsRows = Object.entries(cats).sort((a, b) => b[1] - a[1])
+    .map(([c, v]) => `<div class="res-fila"><span>${c}</span><span class="res-val" style="color:var(--red)">${fmt(v)}</span></div>`).join('');
+
+  document.getElementById('resumenBody').innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px">${MESES[m-1]} ${y}</div>
+    <div class="res-fila"><span>💚 Total ingresos</span><span class="res-val" style="color:var(--green)">${fmt(totIng)}</span></div>
+    <div class="res-fila"><span>💸 Total gastos</span><span class="res-val" style="color:var(--red)">${fmt(totGas)}</span></div>
+    <div class="res-fila"><span>✅ Pagado</span><span class="res-val" style="color:var(--text2)">${fmt(pagado)}</span></div>
+    <div class="res-fila" style="margin-bottom:16px"><span>📅 Por pagar</span><span class="res-val" style="color:var(--blue)">${fmt(pend)}</span></div>
+    ${catsRows ? `<div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.08em;text-transform:uppercase;margin:12px 0 8px">Por categoría</div>${catsRows}` : ''}
+  `;
+}
+
+// ═══════════════════════════════════════════
+// VISTA
+// ═══════════════════════════════════════════
+function setVista(v) {
+  document.getElementById('btnVista').classList.toggle('active', v === 'movimientos');
+  document.getElementById('btnResumen').classList.toggle('active', v === 'resumen');
+  if (v === 'resumen') abrirModal('resumen');
+}
+
+// ═══════════════════════════════════════════
+// MODALES
+// ═══════════════════════════════════════════
+function abrirModal(id) {
+  document.getElementById('overlay').classList.add('active');
+  document.querySelectorAll('.modal').forEach(m => m.style.display = 'none');
+  document.getElementById('modal-' + id).style.display = 'block';
+  if (id === 'resumen') renderResumen();
+  if (id === 'backup') {
+    document.getElementById('importTxt').value = '';
+    document.getElementById('backupMsg').style.display = 'none';
+  }
+}
+function cerrarModal() {
+  document.getElementById('overlay').classList.remove('active');
+  document.getElementById('btnResumen').classList.remove('active');
+  document.getElementById('btnVista').classList.add('active');
+}
+function cerrarModalOverlay(e) {
+  if (e.target === document.getElementById('overlay')) cerrarModal();
+}
+
+// ═══════════════════════════════════════════
+// BACKUP
+// ═══════════════════════════════════════════
+function exportarJSON() {
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href     = url;
+  a.download = 'billetera-' + new Date().toISOString().slice(0, 10) + '.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  mostrarMsgBackup('✅ Backup descargado', true);
+}
+
+function copiarJSON() {
+  const data = JSON.stringify(db);
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(data)
+      .then(() => mostrarMsgBackup('✅ Datos copiados al portapapeles', true))
+      .catch(() => mostrarMsgBackup('⚠️ No se pudo copiar — usá Descargar', false));
+  } else {
+    mostrarMsgBackup('⚠️ Usá Descargar en este navegador', false);
+  }
+}
+
+function importarJSON() {
+  try {
+    const parsed = JSON.parse(document.getElementById('importTxt').value.trim());
+    db = parsed; guardar(); render();
+    mostrarMsgBackup('✅ Datos restaurados', true);
+    document.getElementById('importTxt').value = '';
+  } catch(e) {
+    mostrarMsgBackup('❌ JSON inválido — revisá que copiaste todo', false);
+  }
+}
+
+function mostrarMsgBackup(msg, ok) {
+  const el = document.getElementById('backupMsg');
+  el.textContent   = msg;
+  el.className     = ok ? 'msg-ok' : 'msg-err';
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 3000);
+}
+
+// ═══════════════════════════════════════════
+// RENDER GENERAL
+// ═══════════════════════════════════════════
+function render() {
+  renderMesLabel();
+  renderHero();
+  renderListas();
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+cargar();
+initMes();
+poblarSelects();
+
+// Detectar quincena actual automáticamente
+const hoy = new Date().getDate();
+qActiva = hoy <= 15 ? 1 : 2;
+document.getElementById('tab-q1').classList.toggle('active', qActiva === 1);
+document.getElementById('tab-q2').classList.toggle('active', qActiva === 2);
+
+render();
+</script>
+</body>
+</html>
